@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Hashira — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #00060f;
+  font-family: 'Raleway', sans-serif;
+}
+
+/* ── BACKGROUND ── */
+#bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 130% 70% at 50% 110%, #002244 0%, #001122 50%, #00060f 100%);
+}
+#bg-img {
+  position: fixed; inset: 0; z-index: 1;
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0; transition: opacity 1.2s;
+}
+#bg-img.loaded { opacity: 0.38; }
+#bg-vignette {
+  position: fixed; inset: 0; z-index: 2;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0, 80, 160, 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 38%, rgba(0, 6, 15, 0.88) 100%);
+}
+
+/* Subtle animated water caustic shimmer on bg */
+#caustic-canvas {
+  position: fixed; inset: 0; z-index: 3;
+  pointer-events: none;
+  opacity: 0.18;
+}
+
+/* ── SCENE ── */
+.scene {
+  position: relative; z-index: 10;
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── CARD WRAP ── */
+.card-wrap {
+  position: relative;
+}
+
+#card-water-canvas {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── CARD ── */
+.card {
+  position: relative; z-index: 1;
+  width: min(400px, 90vw);
+  padding: 50px 42px 42px;
+  background: rgba(0, 10, 24, 0.72);
+  backdrop-filter: blur(26px) saturate(1.9);
+  -webkit-backdrop-filter: blur(26px) saturate(1.9);
+  border: 1px solid rgba(30, 140, 210, 0.22);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 180, 255, 0.05),
+    0 12px 50px rgba(0, 0, 20, 0.8),
+    inset 0 1px 0 rgba(100, 200, 255, 0.08);
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  margin-bottom: 38px;
+}
+.header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #d0f0ff;
+  text-shadow:
+    0 0 28px rgba(0, 180, 255, 0.75),
+    0 0 55px rgba(0, 100, 200, 0.35),
+    0 2px 8px rgba(0,0,0,0.95);
+  margin-bottom: 7px;
+}
+.header p {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.38em;
+  color: rgba(80, 180, 230, 0.42);
+  text-transform: uppercase;
+}
+
+/* ── RULE ── */
+.rule {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(30, 160, 220, 0.45), transparent);
+  margin-bottom: 34px;
+}
+
+/* ── FIELD ── */
+.field {
+  margin-bottom: 24px;
+}
+.field label {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.59rem;
+  letter-spacing: 0.32em;
+  color: rgba(80, 175, 220, 0.48);
+  text-transform: uppercase;
+  margin-bottom: 9px;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.field.active label {
+  color: rgba(140, 220, 255, 0.92);
+  text-shadow: 0 0 10px rgba(0, 160, 255, 0.55);
+}
+
+.input-shell {
+  position: relative;
+}
+/* water canvas sits at bottom of input, flows UP */
+.input-shell canvas {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 100px;
+  pointer-events: none;
+  z-index: 0;
+}
+.input-shell input {
+  position: relative; z-index: 1;
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(0, 40, 80, 0.28);
+  border: 1px solid rgba(20, 120, 190, 0.28);
+  border-radius: 3px;
+  color: #d8f0ff;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  outline: none;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+  caret-color: #55ccff;
+}
+.input-shell input::placeholder {
+  color: rgba(80, 160, 210, 0.22);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+}
+.input-shell input:hover {
+  border-color: rgba(40, 160, 220, 0.52);
+  background: rgba(0, 50, 100, 0.32);
+}
+.input-shell input:focus {
+  border-color: rgba(30, 180, 255, 0.75);
+  background: rgba(0, 55, 110, 0.32);
+  box-shadow:
+    0 0 0 2px rgba(0, 150, 255, 0.12),
+    0 0 20px rgba(0, 120, 220, 0.18),
+    inset 0 1px 0 rgba(100, 210, 255, 0.07);
+}
+
+/* ── FORGOT ── */
+.forgot {
+  text-align: right;
+  margin-top: -12px;
+  margin-bottom: 28px;
+}
+.forgot a {
+  font-size: 0.63rem;
+  letter-spacing: 0.12em;
+  color: rgba(60, 150, 210, 0.38);
+  text-decoration: none;
+  font-family: 'Cinzel', serif;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+.forgot a:hover {
+  color: rgba(120, 210, 255, 0.82);
+  text-shadow: 0 0 10px rgba(0, 160, 255, 0.48);
+}
+
+/* ── BUTTON ── */
+.btn {
+  position: relative;
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(180deg, #0055a0 0%, #003672 55%, #002050 100%);
+  border: 1px solid rgba(30, 160, 230, 0.42);
+  border-radius: 3px;
+  color: #cceeff;
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.3s, transform 0.15s;
+  box-shadow:
+    0 4px 22px rgba(0, 80, 180, 0.5),
+    inset 0 1px 0 rgba(100, 200, 255, 0.1);
+}
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(80, 190, 255, 0.14) 0%, transparent 55%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.btn:hover {
+  box-shadow:
+    0 6px 34px rgba(0, 120, 240, 0.72),
+    0 0 55px rgba(0, 160, 255, 0.18),
+    inset 0 1px 0 rgba(140, 220, 255, 0.18);
+  transform: translateY(-1px);
+}
+.btn:hover::before { opacity: 1; }
+.btn:active { transform: translateY(1px); }
+.btn span { position: relative; z-index: 1; }
+/* ripple shimmer */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 48%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(180, 235, 255, 0.18), transparent);
+  transform: skewX(-14deg);
+  animation: shimmer 4.5s ease-in-out infinite;
+}
+@keyframes shimmer { 0%,35%{left:-100%} 65%,100%{left:160%} }
+
+/* ── SOCIAL ── */
+.social-label {
+  text-align: center;
+  margin-top: 26px; margin-bottom: 15px;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: rgba(50, 140, 200, 0.32);
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  position: relative;
+}
+.social-label::before, .social-label::after {
+  content: '';
+  position: absolute; top: 50%;
+  width: 20%; height: 1px;
+  background: linear-gradient(to var(--d), rgba(40,140,200,0.28), transparent);
+}
+.social-label::before { left: 8%; --d: right; }
+.social-label::after  { right: 8%; --d: left; }
+
+.social-icons { display: flex; justify-content: center; gap: 14px; }
+.social-btn {
+  width: 42px; height: 42px;
+  border: 1px solid rgba(30, 120, 190, 0.28);
+  border-radius: 3px;
+  background: rgba(0, 40, 80, 0.25);
+  color: rgba(80, 175, 230, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.social-btn svg { width: 17px; height: 17px; fill: currentColor; }
+.social-btn:hover {
+  border-color: rgba(40, 170, 240, 0.68);
+  color: rgba(140, 220, 255, 0.88);
+  background: rgba(0, 60, 120, 0.35);
+  box-shadow: 0 0 14px rgba(0, 140, 230, 0.22);
+}
+
+/* ── REGISTER ── */
+.register {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  color: rgba(50, 140, 200, 0.32);
+}
+.register a {
+  color: rgba(100, 195, 245, 0.62);
+  text-decoration: none;
+  font-family: 'Cinzel', serif;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+.register a:hover {
+  color: #d0f0ff;
+  text-shadow: 0 0 11px rgba(0, 160, 255, 0.55);
+}
+
+/* ── BG UPLOAD ── */
+.bg-upload {
+  position: fixed; bottom: 18px; right: 18px; z-index: 50;
+  font-family: 'Cinzel', serif; font-size: 0.57rem;
+  letter-spacing: 0.18em; color: rgba(40, 130, 200, 0.28);
+  cursor: pointer; text-transform: uppercase;
+  transition: color 0.2s; user-select: none;
+}
+.bg-upload:hover { color: rgba(100, 200, 255, 0.68); }
+#bg-file { display: none; }
+</style>
+</head>
+<body>
+
+<div id="bg-layer"></div>
+<img id="bg-img" alt="">
+<div id="bg-vignette"></div>
+<canvas id="caustic-canvas"></canvas>
+
+<div class="scene">
+  <div class="card-wrap" id="card-wrap">
+    <canvas id="card-water-canvas"></canvas>
+    <div class="card" id="card">
+
+      <div class="header">
+        <h1>Login Here</h1>
+        <p>Water Hashira · Corps Authentication</p>
+      </div>
+      <div class="rule"></div>
+
+      <div class="field" id="f-user">
+        <label>Username</label>
+        <div class="input-shell">
+          <input type="text" id="inp-user" placeholder="Email or Phone" autocomplete="off">
+          <canvas id="fc-user"></canvas>
+        </div>
+      </div>
+
+      <div class="field" id="f-pass">
+        <label>Password</label>
+        <div class="input-shell">
+          <input type="password" id="inp-pass" placeholder="Password" autocomplete="off">
+          <canvas id="fc-pass"></canvas>
+        </div>
+      </div>
+
+      <div class="forgot"><a href="#">Forgot password?</a></div>
+      <button class="btn"><span>Log In</span></button>
+
+      <div class="social-label">Login with social account</div>
+      <div class="social-icons">
+        <a class="social-btn" href="#">
+          <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <a class="social-btn" href="#">
+          <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a class="social-btn" href="#">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+      </div>
+
+      <div class="register">Don't have an account? <a href="#">Register</a></div>
+    </div>
+  </div>
+</div>
+
+<label class="bg-upload" for="bg-file">Set Background Image</label>
+<input type="file" id="bg-file" accept="image/*">
+
+<script>
+/* ══════════════════════════════════════════════
+   WATER PARTICLE ENGINE
+   Behaviour: flowing streams that arc, swirl,
+   and cascade — like Tomioka's Water Breathing
+   slashes and flowing water tendrils.
+
+   Color ramp:
+     deep navy core → cerulean → cyan-white →
+     translucent aquamarine → fade
+══════════════════════════════════════════════ */
+class WaterParticle {
+  constructor() { this.alive = false; }
+
+  spawn(x, y, o = {}) {
+    this.x       = x + (Math.random() - 0.5) * (o.spread  || 6);
+    this.y       = y;
+    this.vx      = (Math.random() - 0.5)     * (o.vxRange || 1.2) + (o.vxBias || 0);
+    this.vy      = -(Math.random() * (o.vyMax || 2.8) + (o.vyMin || 0.6)) * (o.dir || 1);
+    this.life    = 0;
+    this.maxLife = Math.random() * (o.lifeVar || 45) + (o.lifeBase || 28);
+    this.r0      = Math.random() * (o.sizeVar || 4)  + (o.sizeMin || 1.8);
+    // water swirl — each droplet curves in a sinusoidal arc
+    this.swirlFreq  = Math.random() * 0.10 + 0.04;
+    this.swirlAmp   = Math.random() * 1.8  + 0.6;
+    this.swirlPhase = Math.random() * Math.PI * 2;
+    // gentle drift
+    this.ax = (Math.random() - 0.5) * 0.012;
+    this.alive = true;
+  }
+
+  update() {
+    if (!this.alive) return;
+    this.life++;
+    this.swirlPhase += this.swirlFreq;
+    this.vx += this.ax;
+    this.x  += this.vx + Math.sin(this.swirlPhase) * this.swirlAmp;
+    this.y  += this.vy;
+    this.vy *= 0.992; // decelerate like a rising water stream
+    if (this.life >= this.maxLife) this.alive = false;
+  }
+
+  draw(ctx) {
+    if (!this.alive) return;
+    const t = this.life / this.maxLife;
+    const s = Math.max(0.2, this.r0 * (1 - t * 0.85));
+
+    let r, g, b, a;
+    if (t < 0.08) {
+      // birth: deep navy flash
+      const p = t / 0.08;
+      r = Math.floor(20  + p * 30);
+      g = Math.floor(60  + p * 120);
+      b = Math.floor(140 + p * 100);
+      a = p;
+    } else if (t < 0.30) {
+      // peak: bright cyan-white
+      const p = (t - 0.08) / 0.22;
+      r = Math.floor(50  + p * 170);
+      g = Math.floor(180 + p * 65);
+      b = 255;
+      a = 1;
+    } else if (t < 0.62) {
+      // mid: pure cyan to aqua
+      const p = (t - 0.30) / 0.32;
+      r = Math.floor(220 - p * 130);
+      g = Math.floor(245 - p * 60);
+      b = Math.floor(255 - p * 30);
+      a = 1;
+    } else {
+      // fade: aqua to deep teal ghost
+      const p = (t - 0.62) / 0.38;
+      r = Math.floor(90  - p * 60);
+      g = Math.floor(185 - p * 130);
+      b = Math.floor(225 - p * 160);
+      a = 1 - p;
+    }
+
+    a = Math.max(0, Math.min(1, a));
+
+    // elongated droplet shape — stretched in direction of motion
+    const stretch = 1 + Math.abs(this.vy) * 0.35;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.scale(1, stretch);
+
+    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 2.6);
+    grd.addColorStop(0,    `rgba(${r},${g},${b},${a})`);
+    grd.addColorStop(0.35, `rgba(${Math.max(0,r-20)},${g},${b},${(a * 0.72).toFixed(3)})`);
+    grd.addColorStop(1,    `rgba(0,${Math.max(0,g-60)},${Math.max(0,b-60)},0)`);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, s * 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function makePool(n) {
+  const p = [];
+  for (let i = 0; i < n; i++) p.push(new WaterParticle());
+  return p;
+}
+function getFree(pool) {
+  for (const p of pool) if (!p.alive) return p;
+  return null;
+}
+
+/* ══════════════════════════════════════════════
+   CAUSTIC BACKGROUND — animated refraction lines
+   Pure CSS-impossible, done with canvas noise
+══════════════════════════════════════════════ */
+const causCvs = document.getElementById('caustic-canvas');
+const causCtx = causCvs.getContext('2d');
+let cW, cH;
+function resizeCaustic() {
+  cW = causCvs.width  = window.innerWidth;
+  cH = causCvs.height = window.innerHeight;
+}
+resizeCaustic();
+window.addEventListener('resize', resizeCaustic);
+
+// Caustic lines — sinusoidal flowing curves
+const causticLines = Array.from({ length: 22 }, (_, i) => ({
+  y:     Math.random() * 1.4 - 0.2,  // normalized 0..1
+  speed: Math.random() * 0.0004 + 0.0001,
+  amp:   Math.random() * 0.06 + 0.015,
+  freq:  Math.random() * 4 + 2,
+  phase: Math.random() * Math.PI * 2,
+  width: Math.random() * 1.2 + 0.3,
+  alpha: Math.random() * 0.4 + 0.1,
+}));
+
+function drawCaustics(ts) {
+  causCtx.clearRect(0, 0, cW, cH);
+  for (const l of causticLines) {
+    l.phase += l.speed * 60;
+    causCtx.beginPath();
+    causCtx.strokeStyle = `rgba(40, 160, 240, ${l.alpha})`;
+    causCtx.lineWidth = l.width;
+    causCtx.shadowColor = 'rgba(0, 180, 255, 0.4)';
+    causCtx.shadowBlur = 8;
+    for (let x = 0; x <= cW; x += 4) {
+      const nx = x / cW;
+      const y  = (l.y + Math.sin(nx * l.freq * Math.PI + l.phase) * l.amp) * cH;
+      x === 0 ? causCtx.moveTo(x, y) : causCtx.lineTo(x, y);
+    }
+    causCtx.stroke();
+    causCtx.shadowBlur = 0;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   CARD BORDER WATER FLOW
+   Water streams rise from all 4 edges,
+   with extra intensity along bottom (pool effect)
+   and side tendrils curling inward
+══════════════════════════════════════════════ */
+const cardEl  = document.getElementById('card');
+const bCvs    = document.getElementById('card-water-canvas');
+const bCtx    = bCvs.getContext('2d');
+const PAD     = 80;
+const bPool   = makePool(900);
+let bW, bH, bLast = 0;
+
+function resizeBorder() {
+  const r = cardEl.getBoundingClientRect();
+  bW = bCvs.width  = r.width  + PAD * 2;
+  bH = bCvs.height = r.height + PAD * 2;
+  bCvs.style.top  = `-${PAD}px`;
+  bCvs.style.left = `-${PAD}px`;
+}
+resizeBorder();
+window.addEventListener('resize', resizeBorder);
+
+function spawnBorder(ts) {
+  if (ts - bLast < 14) return;
+  bLast = ts;
+  const cW2 = cardEl.offsetWidth;
+  const cH2 = cardEl.offsetHeight;
+  const PX = PAD, PY = PAD;
+
+  for (let i = 0; i < 8; i++) {
+    const edge = Math.random() < 0.45 ? 0 : Math.floor(Math.random() * 4);
+    let ex, ey, opts, vxB = 0, vyB = 0;
+
+    if (edge === 0) {
+      // bottom — upward cascade (main effect)
+      ex = PX + Math.random() * cW2;
+      ey = PY + cH2;
+      opts = { spread: 16, vyMax: 3.4, vyMin: 1.1, lifeBase: 26, lifeVar: 48, sizeMin: 2.2, sizeVar: 5 };
+    } else if (edge === 1) {
+      // left — rightward curl
+      ex = PX;
+      ey = PY + Math.random() * cH2;
+      vxB = 0.6;
+      opts = { spread: 3, vyMax: 2.2, vyMin: 0.7, lifeBase: 20, lifeVar: 32, sizeMin: 1.5, sizeVar: 3.5 };
+    } else if (edge === 2) {
+      // right — leftward curl
+      ex = PX + cW2;
+      ey = PY + Math.random() * cH2;
+      vxB = -0.6;
+      opts = { spread: 3, vyMax: 2.2, vyMin: 0.7, lifeBase: 20, lifeVar: 32, sizeMin: 1.5, sizeVar: 3.5 };
+    } else {
+      // top — gentle drip downward
+      ex = PX + Math.random() * cW2;
+      ey = PY;
+      vyB = 0.5;
+      opts = { spread: 10, vyMax: 0.6, vyMin: 0.1, lifeBase: 10, lifeVar: 15, sizeMin: 1, sizeVar: 2, dir: -1 };
+    }
+
+    const p = getFree(bPool);
+    if (p) {
+      p.spawn(ex, ey, opts);
+      p.vx += vxB;
+      p.vy += vyB;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════
+   INPUT FIELD WATER EFFECT
+══════════════════════════════════════════════ */
+function makeInputWater(cvsId, fieldId, inpId) {
+  const cvs   = document.getElementById(cvsId);
+  const field = document.getElementById(fieldId);
+  const inp   = document.getElementById(inpId);
+  const ctx   = cvs.getContext('2d');
+  const pool  = makePool(160);
+  let W, H, targetI = 0, curI = 0, lastSpawn = 0;
+
+  function resize() {
+    W = cvs.width  = cvs.parentElement.offsetWidth;
+    H = cvs.height = 100;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function loop(ts) {
+    ctx.clearRect(0, 0, W, H);
+    curI += (targetI - curI) * 0.055;
+
+    if (curI > 0.01 && ts - lastSpawn > 20 / curI) {
+      lastSpawn = ts;
+      const n = Math.ceil(curI * 5);
+      let s = 0;
+      for (const p of pool) {
+        if (!p.alive && s < n) {
+          p.spawn(Math.random() * W, H, {
+            spread:   6,
+            vyMax:    2.5 * curI,
+            vyMin:    0.8 * curI,
+            lifeBase: 20,
+            lifeVar:  32,
+            sizeMin:  1.8,
+            sizeVar:  4.2,
+            vxRange:  1.1,
+          });
+          s++;
+        }
+      }
+    }
+
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of pool) { p.update(); p.draw(ctx); }
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  const setActive = v => {
+    targetI = v;
+    v > 0 ? field.classList.add('active') : field.classList.remove('active');
+  };
+
+  inp.addEventListener('focus',        () => setActive(1.0));
+  inp.addEventListener('blur',         () => setActive(field.matches(':hover') ? 0.42 : 0));
+  field.addEventListener('mouseenter', () => { if (!inp.matches(':focus')) setActive(0.42); });
+  field.addEventListener('mouseleave', () => { if (!inp.matches(':focus')) setActive(0); });
+}
+
+makeInputWater('fc-user', 'f-user', 'inp-user');
+makeInputWater('fc-pass', 'f-pass', 'inp-pass');
+
+/* ══════════════════════════════════════════════
+   MAIN ANIMATION LOOP
+══════════════════════════════════════════════ */
+function mainLoop(ts) {
+  // caustics
+  drawCaustics(ts);
+
+  // border water
+  bCtx.clearRect(0, 0, bW, bH);
+  spawnBorder(ts);
+  bCtx.globalCompositeOperation = 'lighter';
+  for (const p of bPool) { p.update(); p.draw(bCtx); }
+  bCtx.globalCompositeOperation = 'source-over';
+
+  requestAnimationFrame(mainLoop);
+}
+requestAnimationFrame(mainLoop);
+
+/* ══════════════════════════════════════════════
+   BACKGROUND IMAGE
+══════════════════════════════════════════════ */
+document.getElementById('bg-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = document.getElementById('bg-img');
+  img.src = URL.createObjectURL(f);
+  img.onload = () => img.classList.add('loaded');
+});
+</script>
+</body>
+</html>
